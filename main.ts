@@ -9,13 +9,26 @@
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
 //   mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+
+// Fail loudly instead of handing in a broken entry: the game must open
+// (game/index.html) and at least one real screenshot must exist, or the
+// scorer would refuse the entry after the fact.
+if (!existsSync(join(here, 'game', 'index.html'))) {
+  console.error('ERROR: game/index.html is missing next to main.ts');
+  process.exit(1);
+}
+const shots = existsSync(join(here, 'screenshots')) ? readdirSync(join(here, 'screenshots')) : [];
+if (shots.length === 0) {
+  console.error('ERROR: screenshots/ holds no screenshots next to main.ts');
+  process.exit(1);
+}
 
 mkdirSync(out, { recursive: true });
 cpSync(join(here, 'game'), join(out, 'game'), { recursive: true });
